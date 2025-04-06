@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "eu-west-2"  # Changed to eu-west-2 (London)
+  region = "us-west-2"  # Change to your preferred region
 }
 
 # Variables
@@ -321,7 +321,7 @@ output "eks_cluster_certificate_authority" {
 }
 
 output "kubeconfig_command" {
-  value = "aws eks update-kubeconfig --region eu-west-2 --name ${aws_eks_cluster.eks_cluster.name}"
+  value = "aws eks update-kubeconfig --region us-west-2 --name ${aws_eks_cluster.eks_cluster.name}"
 }
 
 output "harness_service_account" {
