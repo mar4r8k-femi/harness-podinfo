@@ -54,7 +54,10 @@ pipeline:
                     caching: true
           caching:
             enabled: true
-            paths: []
+            paths:
+              - /go/pkg
+              - pkg/**/*.go
+              - cmd/**/*.go
           buildIntelligence:
             enabled: true
   variables:
