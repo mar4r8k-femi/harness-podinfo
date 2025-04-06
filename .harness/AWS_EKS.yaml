@@ -45,7 +45,7 @@ pipeline:
                   type: IACMTerraformPlugin
                   name: apply
                   identifier: apply
-                  timeout: 10m
+                  timeout: 2h
                   spec:
                     command: apply
         tags: {}
