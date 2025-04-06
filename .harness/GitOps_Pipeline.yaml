@@ -1,0 +1,73 @@
+pipeline:
+  name: GitOps Pipeline
+  identifier: GitOps_Pipeline
+  projectIdentifier: Femi_Sandbox
+  orgIdentifier: sandbox
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: femigithub
+        repoName: harness-podinfo
+        build: <+input>
+        sparseCheckout: []
+  stages:
+    - stage:
+        name: ci-stage
+        identifier: cistage
+        description: ""
+        type: CI
+        spec:
+          cloneCodebase: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Owasp
+                  name: Run OWASP Scan
+                  identifier: Run_OWASP_Scan
+                  spec:
+                    mode: orchestration
+                    config: default
+                    target:
+                      type: repository
+                      name: Harness GitOps
+                      variant: main
+                    advanced:
+                      log:
+                        level: info
+                      fail_on_severity: none
+              - step:
+                  type: BuildAndPushDockerRegistry
+                  name: Build and Push Docker Registry
+                  identifier: Build_and_Push_Docker_Registry
+                  spec:
+                    connectorRef: femidockerhub
+                    repo: <+pipeline.variables.imageRepo>
+                    tags:
+                      - <+pipeline.variables.imageTag>
+                    caching: true
+          caching:
+            enabled: true
+            paths:
+              - /go/pkg
+              - pkg/**/*.go
+              - cmd/**/*.go
+          buildIntelligence:
+            enabled: true
+  variables:
+    - name: imageRepo
+      type: String
+      description: ""
+      required: false
+      value: mar4r8kfemi/harness-podinfo
+    - name: imageTag
+      type: String
+      description: ""
+      required: false
+      value: latest
