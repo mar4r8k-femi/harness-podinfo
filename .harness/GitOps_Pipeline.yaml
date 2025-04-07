@@ -60,6 +60,170 @@ pipeline:
               - cmd/**/*.go
           buildIntelligence:
             enabled: true
+    - stage:
+        name: Deploy Dev
+        identifier: DeployDev
+        description: ""
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          gitOpsEnabled: true
+          service:
+            serviceRef: podinfoservice
+          execution:
+            steps:
+              - step:
+                  type: ShellScript
+                  name: Update Deployment Artifact
+                  identifier: Update_Deployment_Artifact
+                  spec:
+                    shell: Bash
+                    source:
+                      type: Inline
+                      spec:
+                        script: |-
+                          export IMAGE_TAG="<+pipeline.variables.imageRepo>:<+pipeline.variables.imageTag>"
+                          rm -rf harness-podinfo
+                          git config --global user.email ci-bot@argocd.com && git config --global user.name ci-bot
+                          echo "cloning repo..."
+                          GITHUBPAT=<+secrets.getValue("github_pat")>
+                          git clone https://oauth2:$GITHUBPAT@github.com/mar4r8k-femi/harness-podinfo.git
+                          cd harness-podinfo
+                          ls
+                          FILE_PATH="configs/git-generator-files-discovery/apps/podinfo/deployment.yaml"
+
+                          # Detect OS and set the sed in-place edit command accordingly
+                          if [[ "$OSTYPE" == "darwin"* ]]; then
+                              SED_COMMAND="sed -i ''"
+                          else
+                              SED_COMMAND="sed -i"
+                          fi
+
+                          echo "Updating image tag in deployment YAML"
+                          $SED_COMMAND "s|image: .*|image: $IMAGE_TAG|g" "$FILE_PATH"
+
+                          echo "Committing and pushing"
+                          git add .
+                          git commit -m "Update latest deployment artifact"
+                          git push
+                    environmentVariables: []
+                    outputVariables: []
+                    executionTarget: {}
+                  timeout: 10m
+              - step:
+                  type: GitOpsUpdateReleaseRepo
+                  name: Update Release Repo
+                  identifier: updateReleaseRepo
+                  timeout: 10m
+                  spec:
+                    variables:
+                      - name: asset_id
+                        type: String
+                        value: <+trigger.gitUser>-<+trigger.commitSha>
+              - step:
+                  type: MergePR
+                  name: Merge PR
+                  identifier: mergePR
+                  spec:
+                    deleteSourceBranch: true
+                  timeout: 10m
+              - step:
+                  type: GitOpsFetchLinkedApps
+                  name: Fetch Linked Apps
+                  identifier: fetchLinkedApps
+                  timeout: 10m
+                  spec: {}
+            rollbackSteps: []
+          environment:
+            environmentRef: dev
+            deployToAll: false
+            gitOpsClusters:
+              - identifier: gitops_cluster
+                agentIdentifier: gitopsagent
+        tags: {}
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback
+        gitOpsEnabled: true
+    - stage:
+        name: Approve Promote Prod
+        identifier: ApprovePromoteProd
+        description: ""
+        type: Approval
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Approve Promote Prod
+                  identifier: Approve_Promote_Prod
+                  type: HarnessApproval
+                  timeout: 1d
+                  spec:
+                    approvalMessage: |-
+                      Please review the following information
+                      and approve the pipeline progression
+                    includePipelineExecutionHistory: true
+                    approvers:
+                      minimumCount: 1
+                      disallowPipelineExecutor: false
+                      userGroups:
+                        - _project_all_users
+                    isAutoRejectEnabled: false
+                    approverInputs: []
+        tags: {}
+    - stage:
+        name: Deploy Prod
+        identifier: DeployProd
+        description: ""
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          gitOpsEnabled: true
+          service:
+            serviceRef: podinfoservice
+          execution:
+            steps:
+              - step:
+                  type: GitOpsUpdateReleaseRepo
+                  name: Update Release Repo
+                  identifier: updateReleaseRepo
+                  timeout: 10m
+                  spec:
+                    variables:
+                      - name: asset_id
+                        type: String
+                        value: <+trigger.gitUser>-<+trigger.commitSha>
+              - step:
+                  type: MergePR
+                  name: Merge PR
+                  identifier: mergePR
+                  spec:
+                    deleteSourceBranch: true
+                  timeout: 10m
+              - step:
+                  type: GitOpsFetchLinkedApps
+                  name: Fetch Linked Apps
+                  identifier: fetchLinkedApps
+                  timeout: 10m
+                  spec: {}
+            rollbackSteps: []
+          environment:
+            environmentRef: prod
+            deployToAll: false
+            gitOpsClusters:
+              - identifier: gitopscluster
+                agentIdentifier: undefined
+        tags: {}
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback
+        gitOpsEnabled: true
   variables:
     - name: imageRepo
       type: String
