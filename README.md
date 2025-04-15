@@ -1,5 +1,4 @@
 # podinfo
-# Add change
 
 [![e2e](https://github.com/stefanprodan/podinfo/workflows/e2e/badge.svg)](https://github.com/stefanprodan/podinfo/blob/master/.github/workflows/e2e.yml)
 [![test](https://github.com/stefanprodan/podinfo/workflows/test/badge.svg)](https://github.com/stefanprodan/podinfo/blob/master/.github/workflows/test.yml)
@@ -211,3 +210,5 @@ flux -n default delete helmrelease podinfo
 If you wish to manage the lifecycle of your applications in a **GitOps** manner, check out
 this [workflow example](https://github.com/fluxcd/flux2-kustomize-helm-example)
 for multi-env deployments with Flux, Kustomize and Helm.
+
+make small change
