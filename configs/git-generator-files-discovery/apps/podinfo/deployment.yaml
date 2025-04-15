@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: podinfod
-        image: ghcr.io/stefanprodan/podinfo:6.5.3
+        image: mar4r8kfemi/harness-podinfo:latest
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
